@@ -221,7 +221,7 @@ app.post("/api/classify", auth, async (req, res) => {
   if (!title || !description) return res.status(400).json({ error: "Title and description are required." });
   try {
     const c = await groq.chat.completions.create({
-      model: "llama-3.3-70b-versatile",
+      model: "openai/gpt-oss-120b",
       messages: [
         { role: "system", content: CLASSIFY_PROMPT },
         { role: "user",   content: `Ticket Title: ${title}\n\nDescription: ${description}` },
@@ -260,7 +260,7 @@ app.post("/api/respond/:uid", auth, staffOnly, async (req, res) => {
   const toneDesc = { formal: "formal and corporate", friendly: "warm and friendly", urgent: "urgent and action-focused" };
   try {
     const c = await groq.chat.completions.create({
-      model: "llama-3.3-70b-versatile",
+      model: "openai/gpt-oss-120b",
       messages: [
         { role: "system", content: RESPOND_PROMPT },
         { role: "user",   content: `Tone: ${toneDesc[tone] || "formal"}\nTicket ID: ${row.id}\nCategory: ${row.category}\nPriority: ${row.priority}\nTitle: ${row.title}\nDescription: ${row.description}\nSubmitted by: ${row.submitted_by}` },
@@ -392,7 +392,7 @@ app.get("/api/insight", auth, staffOnly, async (req, res) => {
   const snap = rows.map(r => `[${r.id}] ${r.category}/${r.priority} — "${r.title}" (${r.status})`).join("\n");
   try {
     const c = await groq.chat.completions.create({
-      model: "llama-3.3-70b-versatile",
+      model: "openai/gpt-oss-120b",
       messages: [{ role: "system", content: INSIGHT_PROMPT }, { role: "user", content: snap }],
       temperature: 0.4,
       max_tokens: 180,
