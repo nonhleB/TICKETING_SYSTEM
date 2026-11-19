@@ -1,0 +1,1267 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+<title>TicketAI — Smart Service Desk</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"/>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet"/>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<style>
+/* ── RESET & TOKENS ──────────────────────────────── */
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg:#f4f7f6; --sur:#ffffff; --card:#ffffff; --hov:#eef5f3; --bdr:#e2e9e7; --blit:#cfdedb;
+  --t1:#163530; --t2:#5e7a74; --tm:#9bb3ae;
+  --ac:#14b8a6; --ag:rgba(20,184,166,.15); --ad:rgba(20,184,166,.08);
+  --gr:#22c55e; --ye:#f59e0b; --or:#f97316; --re:#ef4444; --pu:#c084fc; --cy:#38bdf8;
+  --r6:6px; --r10:10px; --r14:14px; --r20:20px;
+  --ease:.16s ease;
+}
+html{scroll-behavior:smooth}
+body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--t1);min-height:100vh}
+
+/* ── GLOBAL HELPERS ──────────────────────────────── */
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:6px;padding:8px 16px;border-radius:var(--r6);font-size:13px;font-weight:500;cursor:pointer;border:1px solid transparent;transition:var(--ease);white-space:nowrap;font-family:inherit}
+.btn:disabled{opacity:.45;pointer-events:none}
+.bp{background:var(--ac);color:#fff}
+.bp:hover{background:#3b6ce0;box-shadow:0 0 0 3px var(--ag)}
+.bg{background:transparent;color:var(--t2);border-color:var(--bdr)}
+.bg:hover{background:var(--hov);color:var(--t1);border-color:var(--blit)}
+.bd{background:rgba(239,68,68,.09);color:var(--re);border-color:rgba(239,68,68,.18)}
+.bd:hover{background:rgba(239,68,68,.18)}
+.bsm{padding:5px 11px;font-size:12px}
+.bfw{width:100%}
+.fg{margin-bottom:15px}
+.fl{display:block;font-size:11px;font-weight:600;letter-spacing:.8px;text-transform:uppercase;color:var(--t2);margin-bottom:6px}
+.fi,.ft,.fs{width:100%;background:var(--sur);border:1px solid var(--bdr);border-radius:var(--r6);color:var(--t1);padding:10px 12px;font-size:13.5px;font-family:inherit;transition:var(--ease)}
+.fi:focus,.ft:focus,.fs:focus{outline:none;border-color:var(--ac);box-shadow:0 0 0 3px var(--ag)}
+.ft{resize:vertical;min-height:110px}
+.fs{cursor:pointer}
+.badge{display:inline-flex;align-items:center;padding:2px 8px;border-radius:99px;font-size:11px;font-weight:600;white-space:nowrap}
+/* category */
+.bHR{background:rgba(6,182,212,.12);color:var(--cy)}
+.bIT{background:rgba(20,184,166,.12);color:var(--ac)}
+.bFinance{background:rgba(34,197,94,.12);color:var(--gr)}
+.bOperations{background:rgba(249,115,22,.12);color:var(--or)}
+/* priority */
+.bLow{background:rgba(110,135,176,.1);color:var(--t2)}
+.bMedium{background:rgba(245,158,11,.12);color:var(--ye)}
+.bHigh{background:rgba(249,115,22,.12);color:var(--or)}
+.bCritical{background:rgba(239,68,68,.13);color:var(--re)}
+/* status */
+.bOpen{background:rgba(20,184,166,.1);color:var(--ac)}
+.bInProgress{background:rgba(245,158,11,.1);color:var(--ye)}
+.bResponded{background:rgba(192,132,252,.1);color:var(--pu)}
+.bResolved{background:rgba(34,197,94,.1);color:var(--gr)}
+.bClosed{background:rgba(57,79,114,.18);color:var(--tm)}
+/* role */
+.badmin{background:rgba(239,68,68,.1);color:var(--re)}
+.bagent{background:rgba(20,184,166,.1);color:var(--ac)}
+.buser{background:rgba(34,197,94,.1);color:var(--gr)}
+
+/* ── LOGIN SCREEN ────────────────────────────────── */
+#login-screen{
+  display:flex;align-items:center;justify-content:center;
+  min-height:100vh;padding:20px;
+  background:
+    radial-gradient(ellipse 70% 55% at 50% -10%, rgba(20,184,166,.14), transparent),
+    radial-gradient(ellipse 45% 35% at 85% 85%, rgba(192,132,252,.07), transparent);
+}
+.lwrap{width:100%;max-width:430px}
+.lbrand{text-align:center;margin-bottom:30px}
+.lbrand-icon{
+  width:62px;height:62px;border-radius:16px;
+  background:linear-gradient(135deg,#14b8a6,#0ea5e9);
+  display:inline-flex;align-items:center;justify-content:center;
+  font-size:28px;margin-bottom:14px;
+  box-shadow:0 0 50px rgba(20,184,166,.35),0 0 0 1px rgba(20,184,166,.2);
+}
+.lbrand h1{font-size:27px;font-weight:800;letter-spacing:-.5px}
+.lbrand h1 em{color:var(--ac);font-style:normal}
+.lbrand p{font-size:13px;color:var(--t2);margin-top:5px}
+.lcard{background:var(--card);border:1px solid var(--blit);border-radius:var(--r20);padding:30px;box-shadow:0 12px 40px rgba(22,53,48,.10)}
+.lcard h2{font-size:15px;font-weight:700;color:var(--t2);margin-bottom:18px}
+.role-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:22px}
+.rpill{padding:11px 8px;border-radius:var(--r10);border:1.5px solid var(--bdr);background:var(--sur);cursor:pointer;text-align:center;transition:var(--ease)}
+.rpill:hover{border-color:var(--blit);background:var(--hov)}
+.rpill.act{border-color:var(--ac);background:var(--ad)}
+.rpill .ri{font-size:20px;display:block;margin-bottom:5px}
+.rpill .rl{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.8px;color:var(--t2)}
+.rpill.act .rl{color:var(--ac)}
+.rpill .ru{font-size:11px;color:var(--tm);margin-top:3px;font-family:'JetBrains Mono',monospace}
+.lerr{background:rgba(239,68,68,.09);border:1px solid rgba(239,68,68,.22);color:var(--re);font-size:12.5px;padding:10px 12px;border-radius:var(--r6);margin-bottom:14px;display:none}
+
+.auth-tabs{display:flex;gap:4px;background:var(--sur);border:1px solid var(--bdr);border-radius:var(--r10);padding:4px;margin-bottom:22px}
+.auth-tab{flex:1;text-align:center;padding:9px 0;border-radius:6px;font-size:13px;font-weight:600;color:var(--t2);cursor:pointer;transition:var(--ease)}
+.auth-tab.on{background:var(--card);color:var(--ac);box-shadow:0 1px 4px rgba(22,53,48,.08)}
+.auth-switch{text-align:center;font-size:12.5px;color:var(--t2);margin-top:14px}
+.auth-switch a{color:var(--ac);cursor:pointer;font-weight:600;text-decoration:none}
+.auth-switch a:hover{text-decoration:underline}
+.fhint{font-size:11.5px;color:var(--tm);margin-top:6px;line-height:1.5}
+.fhint strong{color:var(--ac)}
+
+/* ── APP SHELL ───────────────────────────────────── */
+#app{display:none;height:100vh;overflow:hidden}
+#app.show{display:flex}
+
+/* ── SIDEBAR ─────────────────────────────────────── */
+.sidebar{width:230px;flex-shrink:0;background:var(--sur);border-right:1px solid var(--bdr);display:flex;flex-direction:column;overflow:hidden}
+.sb-logo{padding:17px 15px 13px;border-bottom:1px solid var(--bdr);display:flex;align-items:center;gap:9px}
+.sb-logo-icon{width:31px;height:31px;background:linear-gradient(135deg,#14b8a6,#0ea5e9);border-radius:7px;display:flex;align-items:center;justify-content:center;font-size:14px;flex-shrink:0}
+.sb-logo-text{font-size:15px;font-weight:800;letter-spacing:-.3px}
+.sb-logo-text em{color:var(--ac);font-style:normal}
+.sb-nav{padding:10px 9px;flex:1;overflow-y:auto}
+.sb-section{font-size:9.5px;font-weight:700;letter-spacing:1.3px;text-transform:uppercase;color:var(--tm);padding:0 7px;margin:14px 0 5px}
+.sb-section:first-child{margin-top:0}
+.ni{display:flex;align-items:center;gap:8px;padding:8px 9px;border-radius:var(--r6);color:var(--t2);font-size:13px;font-weight:500;cursor:pointer;transition:var(--ease);border:1px solid transparent}
+.ni:hover{background:var(--hov);color:var(--t1)}
+.ni.on{background:var(--ad);color:var(--ac);border-color:rgba(20,184,166,.17)}
+.ni-ic{font-size:14px;width:16px;text-align:center;flex-shrink:0}
+.ni-badge{margin-left:auto;border-radius:99px;font-size:10px;font-weight:700;padding:2px 6px;min-width:18px;text-align:center}
+.nb-blue{background:var(--ac);color:#fff}
+.nb-red{background:var(--re);color:#fff}
+/* category pills in sidebar */
+.cat-list{padding:4px 9px 10px}
+.cpill{display:flex;align-items:center;gap:8px;padding:7px 8px;border-radius:var(--r6);cursor:pointer;transition:var(--ease);border:1px solid transparent;margin-bottom:2px}
+.cpill:hover{background:var(--hov)}
+.cpill.on{background:var(--hov);border-color:var(--bdr)}
+.cpill-dot{width:7px;height:7px;border-radius:50%;flex-shrink:0}
+.cpill-name{font-size:12.5px;color:var(--t2);font-weight:500;flex:1}
+.cpill.on .cpill-name{color:var(--t1)}
+.cpill-n{font-size:11px;color:var(--tm);font-family:'JetBrains Mono',monospace}
+/* user footer */
+.sb-user{padding:11px;border-top:1px solid var(--bdr)}
+.su-row{display:flex;align-items:center;gap:9px}
+.av{width:30px;height:30px;border-radius:50%;background:linear-gradient(135deg,var(--ac),var(--pu));display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:700;flex-shrink:0}
+.su-name{font-size:12.5px;font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.su-role{font-size:10px;color:var(--t2);text-transform:capitalize}
+.su-out{background:none;border:none;color:var(--tm);cursor:pointer;padding:4px;border-radius:4px;font-size:13px;transition:var(--ease);margin-left:auto}
+.su-out:hover{color:var(--re)}
+
+/* ── MAIN AREA ───────────────────────────────────── */
+.main{flex:1;display:flex;flex-direction:column;overflow:hidden}
+.topbar{height:54px;background:var(--sur);border-bottom:1px solid var(--bdr);display:flex;align-items:center;padding:0 22px;gap:10px;flex-shrink:0}
+.topbar-info{flex:1}
+.topbar-title{font-size:15px;font-weight:700}
+.topbar-sub{font-size:11px;color:var(--t2);margin-top:1px}
+.content{flex:1;overflow-y:auto;padding:22px}
+.page{display:none}
+.page.on{display:block}
+
+/* ── DASHBOARD ───────────────────────────────────── */
+.stat-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:13px;margin-bottom:20px}
+.stat-card{background:var(--card);border:1px solid var(--bdr);border-radius:var(--r10);padding:17px;position:relative;overflow:hidden;transition:var(--ease)}
+.stat-card:hover{border-color:var(--blit)}
+.sc-icon{position:absolute;top:14px;right:14px;font-size:19px;opacity:.26}
+.sc-label{font-size:10.5px;font-weight:600;text-transform:uppercase;letter-spacing:.9px;color:var(--t2)}
+.sc-val{font-size:28px;font-weight:800;margin:6px 0 2px;letter-spacing:-1px}
+.sc-sub{font-size:11px;color:var(--tm)}
+.insight-box{background:linear-gradient(120deg,rgba(20,184,166,.07),rgba(192,132,252,.05));border:1px solid rgba(20,184,166,.18);border-radius:var(--r10);padding:15px 17px;margin-bottom:20px}
+.ib-hd{display:flex;align-items:center;gap:8px;font-size:12px;font-weight:600;color:var(--ac);margin-bottom:7px}
+.ib-dot{width:6px;height:6px;background:var(--gr);border-radius:50%;animation:pulse 2s infinite}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.3}}
+.ib-text{font-size:13px;color:var(--t2);line-height:1.65}
+.chart-grid{display:grid;grid-template-columns:1fr 1fr;gap:13px;margin-bottom:20px}
+.chart-grid-3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:13px;margin-bottom:20px}
+.chart-box{background:var(--card);border:1px solid var(--bdr);border-radius:var(--r10);padding:16px 18px}
+.chart-box-wide{background:var(--card);border:1px solid var(--bdr);border-radius:var(--r10);padding:16px 18px;margin-bottom:20px}
+.chart-title{font-size:10.5px;font-weight:700;text-transform:uppercase;letter-spacing:.8px;color:var(--tm);margin-bottom:14px}
+.chart-canvas-wrap{position:relative;width:100%}
+.chart-canvas-wrap.donut{height:200px;display:flex;align-items:center;justify-content:center}
+.chart-canvas-wrap.bar{height:190px}
+.chart-canvas-wrap.hbar{height:155px}
+.chart-canvas-wrap.line{height:155px}
+
+/* ── TABLE CARD ──────────────────────────────────── */
+.tbox{background:var(--card);border:1px solid var(--bdr);border-radius:var(--r10);overflow:hidden}
+.tbox-head{display:flex;align-items:center;gap:10px;padding:13px 16px;border-bottom:1px solid var(--bdr)}
+.tbox-head h3{font-size:13.5px;font-weight:700;flex:1}
+.filter-row{display:flex;gap:7px;flex-wrap:wrap;padding:9px 16px;border-bottom:1px solid var(--bdr);background:var(--sur)}
+.fsearch{background:var(--card);border:1px solid var(--bdr);color:var(--t1);padding:6px 12px;border-radius:var(--r6);font-size:12px;font-family:inherit;flex:1;min-width:150px}
+.fsearch:focus{outline:none;border-color:var(--ac)}
+.fsearch::placeholder{color:var(--tm)}
+.fsel{background:var(--card);border:1px solid var(--bdr);color:var(--t1);padding:6px 9px;border-radius:var(--r6);font-size:12px;cursor:pointer;font-family:inherit}
+.fsel:focus{outline:none;border-color:var(--ac)}
+table{width:100%;border-collapse:collapse}
+thead th{text-align:left;padding:9px 13px;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.9px;color:var(--tm);border-bottom:1px solid var(--bdr);background:var(--sur)}
+tbody tr{border-bottom:1px solid var(--bdr);cursor:pointer;transition:var(--ease)}
+tbody tr:last-child{border-bottom:none}
+tbody tr:hover{background:var(--hov)}
+td{padding:10px 13px;font-size:13px;vertical-align:middle}
+.td-id{font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--tm)}
+.td-title{font-weight:500;max-width:220px}
+.td-sum{font-size:11px;color:var(--t2);margin-top:2px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:220px}
+.conf{display:flex;align-items:center;gap:5px;font-size:11px;color:var(--t2)}
+.conf-bar{height:3px;width:42px;background:var(--hov);border-radius:2px;overflow:hidden}
+.conf-fill{height:100%;background:var(--ac);border-radius:2px}
+
+/* delete banner */
+.del-banner{background:rgba(239,68,68,.05);border:1px dashed rgba(239,68,68,.18);border-radius:var(--r10);padding:13px 15px;margin-bottom:13px;display:flex;align-items:center;justify-content:space-between;gap:12px}
+.del-banner h4{font-size:13px;font-weight:600;color:var(--re);margin-bottom:2px}
+.del-banner p{font-size:12px;color:var(--t2)}
+
+/* empty */
+.empty{text-align:center;padding:50px 20px;color:var(--tm)}
+.empty-ic{font-size:38px;opacity:.26;margin-bottom:9px}
+.empty p{font-size:13.5px}
+
+/* ── SUBMIT PAGE ─────────────────────────────────── */
+.sub-wrap{max-width:610px}
+.sub-card{background:var(--card);border:1px solid var(--bdr);border-radius:var(--r14);padding:27px}
+.sub-card h2{font-size:19px;font-weight:800;margin-bottom:4px}
+.sub-card .sub{font-size:13px;color:var(--t2);margin-bottom:22px}
+.res-card{background:var(--sur);border:1px solid var(--blit);border-radius:var(--r10);padding:16px;margin-top:15px}
+.res-card h3{font-size:13px;font-weight:700;color:var(--gr);display:flex;gap:6px;align-items:center;margin-bottom:11px}
+.res-grid{display:grid;grid-template-columns:1fr 1fr;gap:9px}
+.ri{display:flex;flex-direction:column;gap:3px}
+.rk{font-size:10px;color:var(--tm)}
+.rv{font-size:13px;font-weight:600}
+
+/* ── MODAL ───────────────────────────────────────── */
+.overlay{display:none;position:fixed;inset:0;background:rgba(22,53,48,.35);backdrop-filter:blur(4px);z-index:400;align-items:center;justify-content:center;padding:16px}
+.overlay.on{display:flex}
+.modal{background:var(--card);border:1px solid var(--blit);border-radius:var(--r14);width:100%;max-width:650px;max-height:90vh;overflow-y:auto;padding:25px;box-shadow:0 16px 50px rgba(22,53,48,.14)}
+.modal-sm{max-width:400px}
+.mhd{display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:20px}
+.mtitle{font-size:17px;font-weight:700}
+.mclose{background:none;border:none;color:var(--tm);font-size:18px;cursor:pointer;transition:var(--ease);line-height:1;padding:2px}
+.mclose:hover{color:var(--t1)}
+.ds{margin-bottom:17px}
+.ds-ttl{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:1.1px;color:var(--tm);margin-bottom:8px;padding-bottom:7px;border-bottom:1px solid var(--bdr)}
+.dtext{font-size:13.5px;line-height:1.65;color:var(--t2);background:var(--sur);border-radius:var(--r6);padding:11px 13px;border:1px solid var(--bdr)}
+.mgrid{display:grid;grid-template-columns:1fr 1fr;gap:9px}
+.mitem{display:flex;flex-direction:column;gap:3px}
+.mkey{font-size:10px;color:var(--tm)}
+.mval{font-size:13px;font-weight:500}
+.kws{display:flex;flex-wrap:wrap;gap:5px;margin-top:7px}
+.kw{background:var(--hov);border:1px solid var(--bdr);color:var(--t2);padding:3px 8px;border-radius:4px;font-size:11px;font-family:'JetBrains Mono',monospace}
+.tone-row{display:flex;gap:7px}
+.tb{flex:1;padding:9px 5px;border-radius:var(--r6);border:1px solid var(--bdr);background:var(--sur);color:var(--t2);font-size:12px;font-weight:500;cursor:pointer;text-align:center;transition:var(--ease);font-family:inherit}
+.tb:hover{border-color:var(--ac);color:var(--ac)}
+.tb.on{background:var(--ad);border-color:var(--ac);color:var(--ac)}
+.tb span{font-size:14px;display:block;margin-bottom:3px}
+.rbox{background:var(--sur);border:1px solid var(--blit);border-radius:var(--r6);padding:13px;font-size:13px;line-height:1.7;color:var(--t1);white-space:pre-wrap;max-height:240px;overflow-y:auto;font-family:inherit}
+/* comments */
+.comment-list{display:flex;flex-direction:column;gap:7px;margin-bottom:9px;max-height:200px;overflow-y:auto}
+.cm{background:var(--sur);border:1px solid var(--bdr);border-radius:var(--r6);padding:10px 12px}
+.cm-hd{display:flex;align-items:center;gap:7px;margin-bottom:4px}
+.cm-av{width:21px;height:21px;border-radius:50%;background:linear-gradient(135deg,var(--ac),var(--pu));display:flex;align-items:center;justify-content:center;font-size:9px;font-weight:700;flex-shrink:0}
+.cm-name{font-size:12px;font-weight:600}
+.cm-time{font-size:11px;color:var(--tm);margin-left:auto}
+.cm-text{font-size:13px;color:var(--t2);line-height:1.5}
+.cm-input{display:flex;gap:7px}
+
+/* ── ACTIVITY LOG ────────────────────────────────── */
+.alog{display:flex;flex-direction:column}
+.aitem{display:flex;align-items:flex-start;gap:11px;padding:10px 16px;border-bottom:1px solid var(--bdr);transition:var(--ease)}
+.aitem:hover{background:var(--hov)}
+.aitem:last-child{border-bottom:none}
+.adot{width:7px;height:7px;border-radius:50%;flex-shrink:0;margin-top:5px}
+.ainfo{flex:1}
+.aact{font-size:12.5px;font-weight:600;color:var(--t2)}
+.adet{font-size:12px;color:var(--tm);margin-top:2px}
+.atime{font-size:11px;color:var(--tm);white-space:nowrap}
+
+/* ── TOAST ───────────────────────────────────────── */
+#toast-wrap{position:fixed;bottom:20px;right:20px;z-index:999;display:flex;flex-direction:column;gap:7px}
+.toast{display:flex;align-items:center;gap:9px;background:var(--card);border:1px solid var(--blit);border-radius:var(--r6);padding:11px 14px;font-size:13px;min-width:260px;box-shadow:0 8px 28px rgba(22,53,48,.12);animation:toastin .2s ease}
+.tok{border-left:3px solid var(--gr)}
+.terr{border-left:3px solid var(--re)}
+.tinf{border-left:3px solid var(--ac)}
+@keyframes toastin{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
+.spin{width:14px;height:14px;border:2px solid rgba(255,255,255,.18);border-top-color:#fff;border-radius:50%;animation:sp .7s linear infinite;flex-shrink:0}
+.spin-lg{width:36px;height:36px;border:3px solid var(--bdr);border-top-color:var(--ac);border-radius:50%;animation:sp .8s linear infinite;margin:0 auto 13px}
+@keyframes sp{to{transform:rotate(360deg)}}
+::-webkit-scrollbar{width:4px;height:4px}
+::-webkit-scrollbar-thumb{background:var(--blit);border-radius:2px}
+::-webkit-scrollbar-track{background:transparent}
+</style>
+</head>
+<body>
+
+<!-- ════════════════ LOGIN / REGISTER ════════════════ -->
+<div id="login-screen">
+  <div class="lwrap">
+    <div class="lbrand">
+      <div class="lbrand-icon">🎫</div>
+      <h1>Ticket<em>AI</em></h1>
+      <p>Smart Service Desk · Powered by Groq AI</p>
+    </div>
+    <div class="lcard">
+
+      <div class="auth-tabs">
+        <div class="auth-tab on" id="tab-login" onclick="switchAuthTab('login')">Sign In</div>
+        <div class="auth-tab" id="tab-register" onclick="switchAuthTab('register')">Create Account</div>
+      </div>
+
+      <!-- ── LOGIN FORM ── -->
+      <div id="form-login">
+        <div id="lerr" class="lerr"></div>
+        <div class="fg"><label class="fl">Username</label><input class="fi" id="lu" placeholder="yourusername" autocomplete="username"/></div>
+        <div class="fg"><label class="fl">Password</label><input class="fi" id="lp" type="password" placeholder="••••••••" autocomplete="current-password"/></div>
+        <button class="btn bp bfw" id="lbtn" onclick="login()">Sign In →</button>
+        <p class="auth-switch">Don't have an account? <a onclick="switchAuthTab('register')">Create one</a></p>
+      </div>
+
+      <!-- ── REGISTER FORM ── -->
+      <div id="form-register" style="display:none">
+        <div id="rerr" class="lerr"></div>
+
+        <div class="fl" style="margin-bottom:8px">I am registering as</div>
+        <div class="role-grid" id="reg-role-grid">
+          <div class="rpill act" data-role="user" onclick="pickRegRole(this)">
+            <span class="ri">👤</span>
+            <div class="rl">User</div>
+            <div class="ru">submit &amp; track tickets</div>
+          </div>
+          <div class="rpill" data-role="admin" onclick="pickRegRole(this)">
+            <span class="ri">🛡️</span>
+            <div class="rl">Admin</div>
+            <div class="ru">requires @ticket.com email</div>
+          </div>
+        </div>
+
+        <div class="fg"><label class="fl">Full Name</label><input class="fi" id="rn" placeholder="e.g. Jane Smith"/></div>
+        <div class="fg"><label class="fl">Username</label><input class="fi" id="ru2" placeholder="choose a username" autocomplete="username"/></div>
+        <div class="fg">
+          <label class="fl">Email</label>
+          <input class="fi" id="re" placeholder="you@example.com" autocomplete="email"/>
+          <div class="fhint" id="email-hint" style="display:none">Admin accounts must use an email ending in <strong>@ticket.com</strong> (e.g. jane@ticket.com)</div>
+        </div>
+        <div class="fg"><label class="fl">Password</label><input class="fi" id="rp" type="password" placeholder="At least 6 characters" autocomplete="new-password"/></div>
+        <button class="btn bp bfw" id="rbtn" onclick="register()">Create Account →</button>
+        <p class="auth-switch">Already have an account? <a onclick="switchAuthTab('login')">Sign in</a></p>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<!-- ════════════════ APP ════════════════ -->
+<div id="app">
+
+  <aside class="sidebar">
+    <div class="sb-logo">
+      <div class="sb-logo-icon">🎫</div>
+      <div class="sb-logo-text">Ticket<em>AI</em></div>
+    </div>
+    <nav class="sb-nav" id="sb-nav"><!-- built by JS --></nav>
+    <div class="sb-user">
+      <div class="su-row">
+        <div class="av" id="u-av">—</div>
+        <div><div class="su-name" id="u-name">—</div><div class="su-role" id="u-role">—</div></div>
+        <button class="su-out" onclick="logout()" title="Sign out">⏏</button>
+      </div>
+    </div>
+  </aside>
+
+  <div class="main">
+    <header class="topbar">
+      <div class="topbar-info">
+        <div class="topbar-title" id="pg-title">Dashboard</div>
+        <div class="topbar-sub"  id="pg-sub">Overview of all ticket activity</div>
+      </div>
+      <button class="btn bg bsm" onclick="refresh()">⟳ Refresh</button>
+      <button class="btn bp bsm" onclick="nav('submit')">+ New Ticket</button>
+    </header>
+
+    <div class="content">
+
+      <!-- DASHBOARD -->
+      <div class="page on" id="page-dashboard">
+        <div class="stat-grid">
+          <div class="stat-card"><span class="sc-icon">🎫</span><div class="sc-label">Total Tickets</div><div class="sc-val" id="s-total">—</div><div class="sc-sub">All time</div></div>
+          <div class="stat-card"><span class="sc-icon">📂</span><div class="sc-label">Open</div><div class="sc-val" id="s-open" style="color:var(--ac)">—</div><div class="sc-sub">Awaiting action</div></div>
+          <div class="stat-card"><span class="sc-icon">✅</span><div class="sc-label">Responded</div><div class="sc-val" id="s-resp" style="color:var(--gr)">—</div><div class="sc-sub">AI responses sent</div></div>
+          <div class="stat-card"><span class="sc-icon">⚡</span><div class="sc-label">Critical</div><div class="sc-val" id="s-crit" style="color:var(--re)">—</div><div class="sc-sub">Needs urgent action</div></div>
+        </div>
+        <div id="insight-wrap"></div>
+        <div class="chart-grid">
+          <div class="chart-box">
+            <div class="chart-title">Tickets by Category</div>
+            <div class="chart-canvas-wrap donut"><canvas id="ch-cat"></canvas></div>
+          </div>
+          <div class="chart-box">
+            <div class="chart-title">Tickets by Priority</div>
+            <div class="chart-canvas-wrap hbar"><canvas id="ch-pri"></canvas></div>
+          </div>
+        </div>
+        <div class="chart-grid">
+          <div class="chart-box">
+            <div class="chart-title">Tickets by Status</div>
+            <div class="chart-canvas-wrap bar"><canvas id="ch-sta"></canvas></div>
+          </div>
+          <div class="chart-box">
+            <div class="chart-title">Tickets Created (last 7 days)</div>
+            <div class="chart-canvas-wrap line"><canvas id="ch-trend"></canvas></div>
+          </div>
+        </div>
+        <div class="tbox">
+          <div class="tbox-head"><h3>Recent Tickets</h3><button class="btn bg bsm" onclick="nav('tickets')">View All →</button></div>
+          <div id="dash-rows"></div>
+        </div>
+      </div>
+
+      <!-- SUBMIT -->
+      <div class="page" id="page-submit">
+        <div class="sub-wrap">
+          <div class="sub-card">
+            <h2>Submit a New Ticket</h2>
+            <p class="sub">Describe your issue and our AI will classify and prioritise it instantly.</p>
+            <div class="fg"><label class="fl">Ticket Title</label><input class="fi" id="s-ttl" placeholder="e.g. Cannot access company VPN"/></div>
+            <div class="fg"><label class="fl">Description</label><textarea class="ft" id="s-dsc" placeholder="Describe your issue in detail. The more context, the better the classification…"></textarea></div>
+            <div class="fg"><label class="fl">Your Name (optional)</label><input class="fi" id="s-nm" placeholder="Defaults to your account name"/></div>
+            <button class="btn bp" id="s-btn" onclick="submitTicket()">🤖 Classify &amp; Submit</button>
+          </div>
+          <div id="s-result" style="display:none"></div>
+        </div>
+      </div>
+
+      <!-- TICKETS -->
+      <div class="page" id="page-tickets">
+        <div id="del-banner" style="display:none"></div>
+        <div class="tbox">
+          <div class="tbox-head"><h3>All Tickets</h3><button class="btn bg bsm" onclick="loadTickets()">⟳</button></div>
+          <div class="filter-row">
+            <input class="fsearch" id="f-q" placeholder="🔍  Search by title, ID or description…" oninput="loadTickets()"/>
+            <select class="fsel" id="f-cat" onchange="loadTickets()">
+              <option value="all">All Categories</option>
+              <option>HR</option><option>IT</option><option>Finance</option><option>Operations</option>
+            </select>
+            <select class="fsel" id="f-pri" onchange="loadTickets()">
+              <option value="all">All Priorities</option>
+              <option>Critical</option><option>High</option><option>Medium</option><option>Low</option>
+            </select>
+            <select class="fsel" id="f-sta" onchange="loadTickets()">
+              <option value="all">All Statuses</option>
+              <option>Open</option><option>In Progress</option>
+              <option>Responded</option><option>Resolved</option><option>Closed</option>
+            </select>
+          </div>
+          <div id="tkt-rows"></div>
+        </div>
+      </div>
+
+      <!-- ACTIVITY LOG (admin only) -->
+      <div class="page" id="page-activity">
+        <div class="tbox">
+          <div class="tbox-head"><h3>Activity Log</h3><button class="btn bg bsm" onclick="loadAudit()">⟳ Refresh</button></div>
+          <div id="audit-rows"></div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<!-- Ticket detail modal -->
+<div class="overlay" id="ov-detail">
+  <div class="modal" id="ov-detail-body"></div>
+</div>
+
+<!-- Confirm delete modal -->
+<div class="overlay" id="ov-confirm">
+  <div class="modal modal-sm" id="ov-confirm-body"></div>
+</div>
+
+<div id="toast-wrap"></div>
+
+<script>
+// ═════════════════════════════════════════════════
+// STATE
+// ═════════════════════════════════════════════════
+let TOK  = localStorage.getItem('tai_tok') || null;
+let USER = JSON.parse(localStorage.getItem('tai_usr') || 'null');
+let PAGE = 'dashboard';
+let TONE = 'formal';
+let CURTKT = null;
+let AGENTS = [];
+let STATS  = {};
+
+// ═════════════════════════════════════════════════
+// API HELPER
+// ═════════════════════════════════════════════════
+async function api(url, opts = {}) {
+  try {
+    const r = await fetch(url, {
+      headers: { 'Content-Type': 'application/json', 'x-session-token': TOK || '' },
+      ...opts,
+    });
+    const d = await r.json();
+    if (r.status === 401) { forceLogout(); return {}; }
+    return d;
+  } catch (e) { toast('Network error — is the server running?', 'err'); return {}; }
+}
+
+// ═════════════════════════════════════════════════
+// AUTH
+// ═════════════════════════════════════════════════
+function switchAuthTab(tab) {
+  const isLogin = tab === 'login';
+  document.getElementById('tab-login').classList.toggle('on', isLogin);
+  document.getElementById('tab-register').classList.toggle('on', !isLogin);
+  document.getElementById('form-login').style.display    = isLogin ? 'block' : 'none';
+  document.getElementById('form-register').style.display = isLogin ? 'none'  : 'block';
+  document.getElementById('lerr').style.display = 'none';
+  document.getElementById('rerr').style.display = 'none';
+}
+
+function pickRegRole(el) {
+  document.querySelectorAll('#reg-role-grid .rpill').forEach(p => p.classList.remove('act'));
+  el.classList.add('act');
+  document.getElementById('email-hint').style.display = el.dataset.role === 'admin' ? 'block' : 'none';
+}
+
+async function register() {
+  const role     = document.querySelector('#reg-role-grid .rpill.act').dataset.role;
+  const name     = document.getElementById('rn').value.trim();
+  const username = document.getElementById('ru2').value.trim();
+  const email    = document.getElementById('re').value.trim();
+  const password = document.getElementById('rp').value;
+  const errEl = document.getElementById('rerr');
+  errEl.style.display = 'none';
+
+  if (!name || !username || !email || !password) {
+    errEl.textContent = 'All fields are required.'; errEl.style.display = 'block'; return;
+  }
+  if (role === 'admin' && !email.toLowerCase().endsWith('@ticket.com')) {
+    errEl.textContent = 'Admin accounts must register with an email ending in "@ticket.com" (e.g. jane@ticket.com).';
+    errEl.style.display = 'block';
+    return;
+  }
+
+  const btn = document.getElementById('rbtn');
+  btn.innerHTML = '<span class="spin"></span> Creating account…'; btn.disabled = true;
+  const d = await fetch('/api/auth/register', {
+    method: 'POST', headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ name, username, email, password, role })
+  }).then(r => r.json()).catch(() => ({ error: 'Server not reachable.' }));
+  btn.innerHTML = 'Create Account →'; btn.disabled = false;
+
+  if (d.error) { errEl.textContent = d.error; errEl.style.display = 'block'; return; }
+
+  TOK = d.token; USER = d.user;
+  localStorage.setItem('tai_tok', TOK);
+  localStorage.setItem('tai_usr', JSON.stringify(USER));
+  toast(`Welcome, ${USER.name}! Account created as ${USER.role}.`, 'ok');
+  bootApp();
+}
+
+async function login() {
+  const u = document.getElementById('lu').value.trim();
+  const p = document.getElementById('lp').value.trim();
+  const errEl = document.getElementById('lerr');
+  errEl.style.display = 'none';
+  const btn = document.getElementById('lbtn');
+  btn.innerHTML = '<span class="spin"></span> Signing in…'; btn.disabled = true;
+  const d = await fetch('/api/auth/login', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ username: u, password: p }) }).then(r => r.json()).catch(() => ({ error: 'Server not reachable.' }));
+  btn.innerHTML = 'Sign In →'; btn.disabled = false;
+  if (d.error) { errEl.textContent = d.error; errEl.style.display = 'block'; return; }
+  TOK = d.token; USER = d.user;
+  localStorage.setItem('tai_tok', TOK);
+  localStorage.setItem('tai_usr', JSON.stringify(USER));
+  bootApp();
+}
+
+async function logout() {
+  await api('/api/auth/logout', { method: 'POST' });
+  forceLogout();
+}
+
+function forceLogout() {
+  TOK = null; USER = null;
+  localStorage.removeItem('tai_tok'); localStorage.removeItem('tai_usr');
+  document.getElementById('app').classList.remove('show');
+  document.getElementById('login-screen').style.display = 'flex';
+}
+
+document.getElementById('lp').addEventListener('keydown', e => { if (e.key === 'Enter') login(); });
+document.getElementById('rp').addEventListener('keydown', e => { if (e.key === 'Enter') register(); });
+
+// ═════════════════════════════════════════════════
+// BOOT
+// ═════════════════════════════════════════════════
+async function bootApp() {
+  document.getElementById('login-screen').style.display = 'none';
+  document.getElementById('app').classList.add('show');
+  document.getElementById('u-av').textContent   = USER.avatar;
+  document.getElementById('u-name').textContent = USER.name;
+  document.getElementById('u-role').textContent = USER.role;
+  buildSidebar();
+  if (USER.role !== 'user') {
+    const ad = await api('/api/agents');
+    AGENTS = ad.agents || [];
+  }
+  nav('dashboard');
+}
+
+// ═════════════════════════════════════════════════
+// SIDEBAR
+// ═════════════════════════════════════════════════
+function buildSidebar() {
+  let h = `
+    <div class="sb-section">Menu</div>
+    <div class="ni on" onclick="nav('dashboard')"><span class="ni-ic">📊</span>Dashboard</div>
+    <div class="ni" onclick="nav('submit')"><span class="ni-ic">➕</span>New Ticket</div>
+    <div class="ni" onclick="nav('tickets')"><span class="ni-ic">📋</span>All Tickets<span class="ni-badge nb-blue" id="nb">0</span></div>
+    <div class="sb-section">Categories</div>
+    <div class="cat-list" id="cat-list"></div>`;
+  if (USER.role === 'admin') {
+    h += `<div class="sb-section">Admin</div>
+    <div class="ni" onclick="nav('activity')"><span class="ni-ic">🕐</span>Activity Log</div>`;
+  }
+  document.getElementById('sb-nav').innerHTML = h;
+  renderCatList('all');
+}
+
+const CAT_DEFS = [
+  { id: 'all',        label: 'All',        dot: 'var(--t2)' },
+  { id: 'IT',         label: 'IT',         dot: 'var(--ac)' },
+  { id: 'HR',         label: 'HR',         dot: 'var(--cy)' },
+  { id: 'Finance',    label: 'Finance',    dot: 'var(--gr)' },
+  { id: 'Operations', label: 'Operations', dot: 'var(--or)' },
+];
+
+function renderCatList(active) {
+  const bc = STATS.byCategory || {};
+  document.getElementById('cat-list').innerHTML = CAT_DEFS.map(c => `
+    <div class="cpill ${active === c.id ? 'on' : ''}" onclick="filterCat('${c.id}')">
+      <div class="cpill-dot" style="background:${c.dot}"></div>
+      <span class="cpill-name">${c.label}</span>
+      <span class="cpill-n">${c.id === 'all' ? (STATS.total || 0) : (bc[c.id] || 0)}</span>
+    </div>`).join('');
+}
+
+function filterCat(cat) {
+  PAGE = 'tickets';
+  document.querySelectorAll('.page').forEach(el => el.classList.remove('on'));
+  document.getElementById('page-tickets').classList.add('on');
+  document.querySelectorAll('.ni').forEach(el => el.classList.remove('on'));
+  document.getElementById('pg-title').textContent = PAGE_META.tickets[0];
+  document.getElementById('pg-sub').textContent   = PAGE_META.tickets[1];
+  document.querySelectorAll('.ni').forEach(el => { if (el.textContent.trim().startsWith('All')) el.classList.add('on'); });
+
+  const sel = document.getElementById('f-cat');
+  if (sel) sel.value = cat;
+  renderCatList(cat);
+  loadTickets();
+}
+
+// ═════════════════════════════════════════════════
+// NAVIGATION
+// ═════════════════════════════════════════════════
+const PAGE_META = {
+  dashboard: ['Dashboard',    'Overview of all ticket activity'],
+  submit:    ['New Ticket',   'Submit a request for AI classification'],
+  tickets:   ['All Tickets',  'Browse, filter and manage tickets'],
+  activity:  ['Activity Log', 'Full system audit trail (Admin only)'],
+};
+function nav(p) {
+  PAGE = p;
+  document.querySelectorAll('.page').forEach(el => el.classList.remove('on'));
+  document.getElementById('page-' + p).classList.add('on');
+  document.querySelectorAll('.ni').forEach(el => el.classList.remove('on'));
+  const [title, sub] = PAGE_META[p] || ['TicketAI', ''];
+  document.getElementById('pg-title').textContent = title;
+  document.getElementById('pg-sub').textContent   = sub;
+  // highlight nav item by matching first word
+  document.querySelectorAll('.ni').forEach(el => { if (el.textContent.trim().startsWith(title.split(' ')[0])) el.classList.add('on'); });
+  if (p === 'dashboard') loadDashboard();
+  if (p === 'tickets')   loadTickets();
+  if (p === 'activity')  loadAudit();
+}
+function refresh() { nav(PAGE); }
+
+// ═════════════════════════════════════════════════
+// DASHBOARD
+// ═════════════════════════════════════════════════
+async function loadDashboard() {
+  const [sd, td] = await Promise.all([api('/api/stats'), api('/api/tickets')]);
+  STATS = sd;
+  document.getElementById('s-total').textContent = sd.total       || 0;
+  document.getElementById('s-open').textContent  = sd.byStatus?.Open || 0;
+  document.getElementById('s-resp').textContent  = sd.responded   || 0;
+  document.getElementById('s-crit').textContent  = sd.byPriority?.Critical || 0;
+  const nb = document.getElementById('nb');
+  if (nb) nb.textContent = sd.total || 0;
+  renderCatList('all');
+  const catData = [sd.byCategory?.IT||0, sd.byCategory?.HR||0, sd.byCategory?.Finance||0, sd.byCategory?.Operations||0];
+  const priData = [sd.byPriority?.Critical||0, sd.byPriority?.High||0, sd.byPriority?.Medium||0, sd.byPriority?.Low||0];
+  const staData = [sd.byStatus?.Open||0, sd.byStatus?.['In Progress']||0, sd.byStatus?.Responded||0, sd.byStatus?.Resolved||0, sd.byStatus?.Closed||0];
+  drawDonut('ch-cat', ['IT','HR','Finance','Operations'], catData, ['#14b8a6','#38bdf8','#22c55e','#f97316']);
+  drawHBar('ch-pri',  ['Critical','High','Medium','Low'], priData, ['#ef4444','#f97316','#f59e0b','#394f72']);
+  drawBar('ch-sta',   ['Open','In Progress','Responded','Resolved','Closed'], staData, ['#14b8a6','#f59e0b','#c084fc','#22c55e','#396a61']);
+  drawTrend('ch-trend', td.tickets || []);
+  renderTable('dash-rows', (td.tickets || []).slice(0, 6));
+  if (USER.role !== 'user') loadInsight();
+  else document.getElementById('insight-wrap').innerHTML = '';
+}
+
+async function loadInsight() {
+  document.getElementById('insight-wrap').innerHTML = `<div class="insight-box"><div class="ib-hd"><div class="ib-dot"></div>AI Insight</div><div class="ib-text" style="color:var(--tm)">Analysing tickets…</div></div>`;
+  const d = await api('/api/insight');
+  document.getElementById('insight-wrap').innerHTML = `
+    <div class="insight-box">
+      <div class="ib-hd"><div class="ib-dot"></div>AI Insight <span style="font-size:10px;color:var(--tm);margin-left:6px;font-weight:400">Groq · llama-3.3-70b</span></div>
+      <div class="ib-text">${d.insight || 'No insight available.'}</div>
+    </div>`;
+}
+
+// ─── Chart instances (destroyed & recreated on each dashboard load) ───────────
+const _charts = {};
+function mkChart(id, type, data, options) {
+  if (_charts[id]) { _charts[id].destroy(); }
+  const canvas = document.getElementById(id);
+  if (!canvas) return;
+  const baseOpts = {
+    responsive: true,
+    maintainAspectRatio: false,
+    plugins: {
+      legend: {
+        labels: {
+          color: '#6e87b0',
+          font: { family: 'Inter', size: 11 },
+          boxWidth: 10,
+          padding: 12,
+        }
+      },
+      tooltip: {
+        backgroundColor: '#111827',
+        borderColor: '#243356',
+        borderWidth: 1,
+        titleColor: '#dde6f5',
+        bodyColor: '#6e87b0',
+        padding: 10,
+        cornerRadius: 8,
+      }
+    },
+  };
+  _charts[id] = new Chart(canvas, {
+    type,
+    data,
+    options: deepMerge(baseOpts, options || {}),
+  });
+}
+
+function deepMerge(a, b) {
+  const out = { ...a };
+  for (const k in b) {
+    if (b[k] && typeof b[k] === 'object' && !Array.isArray(b[k])) out[k] = deepMerge(a[k] || {}, b[k]);
+    else out[k] = b[k];
+  }
+  return out;
+}
+
+function drawDonut(id, labels, data, colors) {
+  mkChart(id, 'doughnut', {
+    labels,
+    datasets: [{
+      data,
+      backgroundColor: colors.map(c => c + '33'),
+      borderColor: colors,
+      borderWidth: 2,
+      hoverBackgroundColor: colors.map(c => c + '66'),
+      hoverOffset: 6,
+    }],
+  }, {
+    cutout: '68%',
+    plugins: {
+      legend: { position: 'bottom' },
+    },
+  });
+}
+
+function drawHBar(id, labels, data, colors) {
+  mkChart(id, 'bar', {
+    labels,
+    datasets: [{
+      data,
+      backgroundColor: colors.map(c => c + '33'),
+      borderColor: colors,
+      borderWidth: 2,
+      borderRadius: 6,
+      borderSkipped: false,
+    }],
+  }, {
+    indexAxis: 'y',
+    plugins: { legend: { display: false } },
+    scales: {
+      x: {
+        grid: { color: '#1a2540' },
+        ticks: { color: '#6e87b0', font: { size: 11 } },
+        border: { display: false },
+      },
+      y: {
+        grid: { display: false },
+        ticks: { color: '#6e87b0', font: { size: 12 } },
+        border: { display: false },
+      },
+    },
+  });
+}
+
+function drawBar(id, labels, data, colors) {
+  mkChart(id, 'bar', {
+    labels,
+    datasets: [{
+      data,
+      backgroundColor: colors.map(c => c + '33'),
+      borderColor: colors,
+      borderWidth: 2,
+      borderRadius: 6,
+      borderSkipped: false,
+    }],
+  }, {
+    plugins: { legend: { display: false } },
+    scales: {
+      x: {
+        grid: { display: false },
+        ticks: { color: '#6e87b0', font: { size: 11 } },
+        border: { display: false },
+      },
+      y: {
+        grid: { color: '#1a2540' },
+        ticks: { color: '#6e87b0', font: { size: 11 }, stepSize: 1 },
+        border: { display: false },
+        beginAtZero: true,
+      },
+    },
+  });
+}
+
+function drawTrend(id, tickets) {
+  // build last 7 days
+  const days = [];
+  const counts = [];
+  for (let i = 6; i >= 0; i--) {
+    const d = new Date();
+    d.setDate(d.getDate() - i);
+    const label = d.toLocaleDateString('en-GB', { weekday: 'short', day: 'numeric' });
+    days.push(label);
+    const dayStr = d.toISOString().slice(0, 10);
+    counts.push(tickets.filter(t => t.createdAt.slice(0, 10) === dayStr).length);
+  }
+  mkChart(id, 'line', {
+    labels: days,
+    datasets: [{
+      label: 'Tickets',
+      data: counts,
+      borderColor: '#14b8a6',
+      backgroundColor: 'rgba(20,184,166,0.12)',
+      borderWidth: 2,
+      pointBackgroundColor: '#14b8a6',
+      pointBorderColor: '#111827',
+      pointBorderWidth: 2,
+      pointRadius: 4,
+      pointHoverRadius: 6,
+      tension: 0.4,
+      fill: true,
+    }],
+  }, {
+    plugins: { legend: { display: false } },
+    scales: {
+      x: {
+        grid: { display: false },
+        ticks: { color: '#6e87b0', font: { size: 10 } },
+        border: { display: false },
+      },
+      y: {
+        grid: { color: '#1a2540' },
+        ticks: { color: '#6e87b0', font: { size: 11 }, stepSize: 1 },
+        border: { display: false },
+        beginAtZero: true,
+      },
+    },
+  });
+}
+
+// ═════════════════════════════════════════════════
+// TICKETS TABLE
+// ═════════════════════════════════════════════════
+async function loadTickets() {
+  const q   = document.getElementById('f-q')?.value   || '';
+  const cat = document.getElementById('f-cat')?.value || 'all';
+  const pri = document.getElementById('f-pri')?.value || 'all';
+  const sta = document.getElementById('f-sta')?.value || 'all';
+  const p = new URLSearchParams();
+  if (cat !== 'all') p.set('category', cat);
+  if (pri !== 'all') p.set('priority', pri);
+  if (sta !== 'all') p.set('status', sta);
+  if (q)             p.set('search', q);
+  const d = await api('/api/tickets?' + p);
+  renderTable('tkt-rows', d.tickets || []);
+
+  // show delete banner for admin when closed tickets exist in view
+  const banner = document.getElementById('del-banner');
+  if (USER.role === 'admin') {
+    const n = (d.tickets || []).filter(t => t.status === 'Closed').length;
+    if (n > 0) {
+      banner.style.display = 'flex';
+      banner.innerHTML = `
+        <div>
+          <h4>🗑️ ${n} Closed Ticket${n !== 1 ? 's' : ''} in view</h4>
+          <p>Only closed tickets can be permanently deleted.</p>
+        </div>
+        <button class="btn bd bsm" onclick="askBulkDelete(${n})">Delete All Closed</button>`;
+    } else { banner.style.display = 'none'; }
+  } else { banner.style.display = 'none'; }
+}
+
+function renderTable(id, tickets) {
+  const el = document.getElementById(id);
+  if (!tickets.length) {
+    el.innerHTML = `<div class="empty"><div class="empty-ic">🎫</div><p>No tickets found.</p></div>`;
+    return;
+  }
+  const isAdmin = USER.role === 'admin';
+  el.innerHTML = `
+    <table>
+      <thead><tr>
+        <th>ID</th><th>Title</th><th>Category</th><th>Priority</th>
+        <th>Status</th><th>Confidence</th><th>Submitted By</th>
+        ${isAdmin ? '<th></th>' : ''}
+      </tr></thead>
+      <tbody>
+        ${tickets.map(t => `
+          <tr onclick="openTicket('${t.uid}')">
+            <td class="td-id">${t.id}</td>
+            <td class="td-title">${t.title}<div class="td-sum">${t.classification.summary}</div></td>
+            <td>${CB(t.classification.category)}</td>
+            <td>${PB(t.classification.priority)}</td>
+            <td>${SB(t.status)}</td>
+            <td><div class="conf"><div class="conf-bar"><div class="conf-fill" style="width:${t.classification.confidence}%"></div></div>${t.classification.confidence}%</div></td>
+            <td style="font-size:12px;color:var(--t2)">${t.submittedBy}</td>
+            ${isAdmin ? `<td onclick="event.stopPropagation()">${t.status === 'Closed' ? `<button class="btn bd bsm" onclick="askDelete('${t.uid}','${t.id}')">🗑️ Delete</button>` : `<span style="color:var(--bdr);font-size:11px">—</span>`}</td>` : ''}
+          </tr>`).join('')}
+      </tbody>
+    </table>`;
+}
+
+// ═════════════════════════════════════════════════
+// TICKET DETAIL MODAL
+// ═════════════════════════════════════════════════
+async function openTicket(uid) {
+  const ov = document.getElementById('ov-detail');
+  const body = document.getElementById('ov-detail-body');
+  ov.classList.add('on');
+  body.innerHTML = `<div style="text-align:center;padding:44px"><div class="spin-lg"></div><p style="color:var(--t2)">Loading ticket…</p></div>`;
+  const d = await api('/api/tickets/' + uid);
+  if (d.error) { toast(d.error, 'err'); closeDetail(); return; }
+  CURTKT = d.ticket;
+  TONE   = d.ticket.tone || 'formal';
+  drawDetail(CURTKT);
+}
+
+function drawDetail(t) {
+  const isStaff = ['admin', 'agent'].includes(USER.role);
+  const isAdmin = USER.role === 'admin';
+  const agOpts  = AGENTS.map(a => `<option value="${a.name}" ${t.assignedTo === a.name ? 'selected' : ''}>${a.name} (${a.role})</option>`).join('');
+
+  const respBlock = t.response ? `
+    <div class="ds">
+      <div class="ds-ttl">AI Response
+        <span style="color:var(--pu);margin-left:6px">${(t.tone || '').toUpperCase()}</span>
+        ${t.respondedBy ? `<span style="color:var(--tm);margin-left:8px;font-size:9px">by ${t.respondedBy}</span>` : ''}
+      </div>
+      <div class="rbox">${t.response}</div>
+    </div>` : '';
+
+  const cmList = (t.comments || []).length
+    ? t.comments.map(c => `
+      <div class="cm">
+        <div class="cm-hd">
+          <div class="cm-av">${c.avatar}</div>
+          <span class="cm-name">${c.author}</span>
+          <span class="badge b${c.role}" style="font-size:9px;padding:1px 6px">${c.role}</span>
+          <span class="cm-time">${ago(c.at)}</span>
+        </div>
+        <div class="cm-text">${c.text}</div>
+      </div>`).join('')
+    : `<p style="font-size:12px;color:var(--tm);padding:6px 0">No comments yet.</p>`;
+
+  document.getElementById('ov-detail-body').innerHTML = `
+    <div class="mhd">
+      <div>
+        <div style="font-size:10px;font-family:'JetBrains Mono',monospace;color:var(--tm);margin-bottom:4px">${t.id}</div>
+        <div class="mtitle">${t.title}</div>
+        <div style="margin-top:7px;display:flex;gap:5px;flex-wrap:wrap">
+          ${CB(t.classification.category)} ${PB(t.classification.priority)} ${SB(t.status)}
+        </div>
+      </div>
+      <button class="mclose" onclick="closeDetail()">✕</button>
+    </div>
+
+    <div class="ds">
+      <div class="ds-ttl">Description</div>
+      <div class="dtext">${t.description}</div>
+    </div>
+
+    <div class="ds">
+      <div class="ds-ttl">Classification</div>
+      <div class="mgrid">
+        <div class="mitem"><span class="mkey">AI Summary</span><span class="mval" style="font-size:12px;color:var(--t2)">${t.classification.summary}</span></div>
+        <div class="mitem"><span class="mkey">Confidence</span><span class="mval">${t.classification.confidence}%</span></div>
+        <div class="mitem"><span class="mkey">Submitted By</span><span class="mval">${t.submittedBy}</span></div>
+        <div class="mitem"><span class="mkey">Assigned To</span><span class="mval">${t.assignedTo || '<span style="color:var(--tm)">Unassigned</span>'}</span></div>
+        <div class="mitem"><span class="mkey">Created</span><span class="mval" style="font-size:11.5px">${new Date(t.createdAt).toLocaleString()}</span></div>
+        <div class="mitem"><span class="mkey">Last Updated</span><span class="mval" style="font-size:11.5px">${ago(t.updatedAt)}</span></div>
+      </div>
+      <div class="kws">${(t.classification.keywords || []).map(k => `<span class="kw">${k}</span>`).join('')}</div>
+    </div>
+
+    ${respBlock}
+
+    ${isStaff ? `
+    <div class="ds">
+      <div class="ds-ttl">Generate AI Response</div>
+      <div class="tone-row" id="tone-row">
+        <div class="tb ${TONE === 'formal'   ? 'on' : ''}" onclick="setTone(this,'formal')"><span>🎩</span>Formal</div>
+        <div class="tb ${TONE === 'friendly' ? 'on' : ''}" onclick="setTone(this,'friendly')"><span>😊</span>Friendly</div>
+        <div class="tb ${TONE === 'urgent'   ? 'on' : ''}" onclick="setTone(this,'urgent')"><span>⚡</span>Urgent</div>
+      </div>
+      <div style="margin-top:10px;display:flex;gap:8px;flex-wrap:wrap;align-items:center">
+        <button class="btn bp bsm" id="gen-btn" onclick="genResponse('${t.uid}')">✨ Generate Response</button>
+        <select class="fsel" onchange="setStatus('${t.uid}',this.value)">
+          <option value="">Change Status…</option>
+          <option>Open</option><option>In Progress</option>
+          <option>Responded</option><option>Resolved</option><option>Closed</option>
+        </select>
+        ${AGENTS.length ? `
+        <select class="fsel" onchange="assignTicket('${t.uid}',this.value)">
+          <option value="">Assign to agent…</option>
+          ${agOpts}
+          <option value="__clear">— Remove assignment —</option>
+        </select>` : ''}
+      </div>
+    </div>` : ''}
+
+    <div class="ds">
+      <div class="ds-ttl">Comments (${(t.comments || []).length})</div>
+      <div class="comment-list">${cmList}</div>
+      <div class="cm-input">
+        <input class="fi" id="cm-in" placeholder="Add a comment…" style="font-size:13px;padding:8px 12px" onkeydown="if(event.key==='Enter')addComment('${t.uid}')"/>
+        <button class="btn bg bsm" onclick="addComment('${t.uid}')">Post</button>
+      </div>
+    </div>
+
+    ${isAdmin && t.status === 'Closed' ? `
+    <div style="margin-top:14px;padding-top:14px;border-top:1px solid rgba(239,68,68,.15)">
+      <button class="btn bd bsm" onclick="askDelete('${t.uid}','${t.id}');closeDetail()">🗑️ Delete This Ticket</button>
+      <span style="font-size:11px;color:var(--tm);margin-left:10px">Admins can permanently delete closed tickets</span>
+    </div>` : ''}
+  `;
+}
+
+function setTone(el, tone) {
+  TONE = tone;
+  document.querySelectorAll('#tone-row .tb').forEach(b => b.classList.remove('on'));
+  el.classList.add('on');
+}
+
+async function genResponse(uid) {
+  const btn = document.getElementById('gen-btn');
+  btn.innerHTML = '<span class="spin"></span> Generating…'; btn.disabled = true;
+  const d = await api('/api/respond/' + uid, { method: 'POST', body: JSON.stringify({ tone: TONE }) });
+  btn.innerHTML = '✨ Generate Response'; btn.disabled = false;
+  if (d.error) { toast(d.error, 'err'); return; }
+  CURTKT = d.ticket; drawDetail(CURTKT);
+  toast('AI response generated successfully!', 'ok');
+  loadDashboard();
+}
+
+async function setStatus(uid, status) {
+  if (!status) return;
+  const d = await api('/api/tickets/' + uid + '/status', { method: 'PATCH', body: JSON.stringify({ status }) });
+  if (d.error) { toast(d.error, 'err'); return; }
+  CURTKT = d.ticket; drawDetail(CURTKT);
+  toast(`Status updated → "${status}"`, 'inf');
+  loadDashboard();
+}
+
+async function assignTicket(uid, name) {
+  if (!name) return;
+  const assignedTo = name === '__clear' ? null : name;
+  const d = await api('/api/tickets/' + uid + '/assign', { method: 'PATCH', body: JSON.stringify({ assignedTo }) });
+  if (d.error) { toast(d.error, 'err'); return; }
+  CURTKT = d.ticket; drawDetail(CURTKT);
+  toast(assignedTo ? `Assigned to ${assignedTo}` : 'Assignment removed', 'inf');
+}
+
+async function addComment(uid) {
+  const inp  = document.getElementById('cm-in');
+  const text = inp.value.trim();
+  if (!text) return;
+  inp.value = '';
+  const d = await api('/api/tickets/' + uid + '/comments', { method: 'POST', body: JSON.stringify({ text }) });
+  if (d.error) { toast(d.error, 'err'); return; }
+  CURTKT = d.ticket; drawDetail(CURTKT);
+}
+
+function closeDetail() { document.getElementById('ov-detail').classList.remove('on'); CURTKT = null; }
+
+// ═════════════════════════════════════════════════
+// DELETE (admin only)
+// ═════════════════════════════════════════════════
+function askDelete(uid, id) {
+  document.getElementById('ov-confirm-body').innerHTML = `
+    <div class="mhd">
+      <div class="mtitle" style="color:var(--re)">🗑️ Delete Ticket</div>
+      <button class="mclose" onclick="closeConfirm()">✕</button>
+    </div>
+    <p style="font-size:13.5px;color:var(--t2);margin-bottom:20px">
+      Permanently delete <strong style="color:var(--t1)">${id}</strong>?
+      This action <strong>cannot be undone</strong>.
+    </p>
+    <div style="display:flex;gap:8px;justify-content:flex-end">
+      <button class="btn bg bsm" onclick="closeConfirm()">Cancel</button>
+      <button class="btn bd bsm" onclick="deleteOne('${uid}')">Delete Permanently</button>
+    </div>`;
+  document.getElementById('ov-confirm').classList.add('on');
+}
+
+function askBulkDelete(n) {
+  document.getElementById('ov-confirm-body').innerHTML = `
+    <div class="mhd">
+      <div class="mtitle" style="color:var(--re)">🗑️ Delete All Closed</div>
+      <button class="mclose" onclick="closeConfirm()">✕</button>
+    </div>
+    <p style="font-size:13.5px;color:var(--t2);margin-bottom:20px">
+      Permanently delete <strong style="color:var(--t1)">${n} closed ticket${n !== 1 ? 's' : ''}</strong>?
+      This <strong>cannot be undone</strong>.
+    </p>
+    <div style="display:flex;gap:8px;justify-content:flex-end">
+      <button class="btn bg bsm" onclick="closeConfirm()">Cancel</button>
+      <button class="btn bd bsm" onclick="deleteAll()">Delete All ${n}</button>
+    </div>`;
+  document.getElementById('ov-confirm').classList.add('on');
+}
+
+async function deleteOne(uid) {
+  closeConfirm();
+  const d = await api('/api/tickets/' + uid, { method: 'DELETE' });
+  if (d.error) { toast(d.error, 'err'); return; }
+  toast(`${d.deletedId} deleted permanently`, 'ok');
+  loadTickets(); loadDashboard();
+}
+
+async function deleteAll() {
+  closeConfirm();
+  const d = await api('/api/tickets', { method: 'DELETE' });
+  if (d.error) { toast(d.error, 'err'); return; }
+  toast(`${d.deleted} closed ticket${d.deleted !== 1 ? 's' : ''} deleted`, 'ok');
+  loadTickets(); loadDashboard();
+}
+
+function closeConfirm() { document.getElementById('ov-confirm').classList.remove('on'); }
+
+// ═════════════════════════════════════════════════
+// SUBMIT TICKET
+// ═════════════════════════════════════════════════
+async function submitTicket() {
+  const title = document.getElementById('s-ttl').value.trim();
+  const desc  = document.getElementById('s-dsc').value.trim();
+  const name  = document.getElementById('s-nm').value.trim();
+  if (!title || !desc) { toast('Please fill in the title and description.', 'err'); return; }
+  const btn = document.getElementById('s-btn');
+  btn.innerHTML = '<span class="spin"></span> Classifying…'; btn.disabled = true;
+  const d = await api('/api/classify', { method: 'POST', body: JSON.stringify({ title, description: desc, submittedBy: name || USER.name }) });
+  btn.innerHTML = '🤖 Classify & Submit'; btn.disabled = false;
+  if (d.error) { toast(d.error, 'err'); return; }
+  const t  = d.ticket;
+  const nb = document.getElementById('nb');
+  if (nb) nb.textContent = parseInt(nb.textContent || 0) + 1;
+  const out = document.getElementById('s-result');
+  out.style.display = 'block';
+  out.innerHTML = `
+    <div class="res-card">
+      <h3>✅ Ticket Classified Successfully</h3>
+      <div class="res-grid">
+        <div class="ri"><span class="rk">Ticket ID</span><span class="rv" style="font-family:'JetBrains Mono',monospace;color:var(--ac)">${t.id}</span></div>
+        <div class="ri"><span class="rk">Category</span><span class="rv">${CB(t.classification.category)}</span></div>
+        <div class="ri"><span class="rk">Priority</span><span class="rv">${PB(t.classification.priority)}</span></div>
+        <div class="ri"><span class="rk">Confidence</span><span class="rv">${t.classification.confidence}%</span></div>
+      </div>
+      <div style="margin-top:10px;font-size:13px;color:var(--t2);line-height:1.6">
+        <strong style="color:var(--t1)">AI Summary:</strong> ${t.classification.summary}
+      </div>
+      <div style="margin-top:12px;display:flex;gap:8px;flex-wrap:wrap">
+        <button class="btn bp bsm" onclick="openTicket('${t.uid}')">View Ticket →</button>
+        <button class="btn bg bsm" onclick="clearSubmit()">Submit Another</button>
+      </div>
+    </div>`;
+  toast(`${t.id} · ${t.classification.category} · ${t.classification.priority}`, 'ok');
+}
+
+function clearSubmit() {
+  ['s-ttl', 's-dsc', 's-nm'].forEach(id => document.getElementById(id).value = '');
+  document.getElementById('s-result').style.display = 'none';
+}
+
+// ═════════════════════════════════════════════════
+// ACTIVITY LOG
+// ═════════════════════════════════════════════════
+const DOT_COLORS = {
+  LOGIN: 'var(--gr)', LOGOUT: 'var(--tm)', TICKET_CREATED: 'var(--ac)',
+  RESPONDED: 'var(--pu)', STATUS_CHANGE: 'var(--ye)', ASSIGNED: 'var(--cy)',
+  DELETE: 'var(--re)', BULK_DELETE: 'var(--re)', COMMENT: 'var(--or)',
+};
+
+async function loadAudit() {
+  const d = await api('/api/audit');
+  const log = d.log || [];
+  const el  = document.getElementById('audit-rows');
+  if (!log.length) { el.innerHTML = `<div class="empty"><div class="empty-ic">🕐</div><p>No activity recorded yet.</p></div>`; return; }
+  el.innerHTML = `<div class="alog">${log.map(e => `
+    <div class="aitem">
+      <div class="adot" style="background:${DOT_COLORS[e.action] || 'var(--tm)'}"></div>
+      <div class="ainfo">
+        <div class="aact">${e.by} <span class="badge b${e.role}" style="font-size:9px;padding:1px 5px">${e.role}</span></div>
+        <div class="adet">${e.detail}</div>
+      </div>
+      <div class="atime">${ago(e.at)}</div>
+    </div>`).join('')}</div>`;
+}
+
+// ═════════════════════════════════════════════════
+// HELPERS
+// ═════════════════════════════════════════════════
+// close modals on backdrop click
+document.getElementById('ov-detail').addEventListener('click',  e => { if (e.target === e.currentTarget) closeDetail(); });
+document.getElementById('ov-confirm').addEventListener('click', e => { if (e.target === e.currentTarget) closeConfirm(); });
+
+// badge builders
+const CB = c => `<span class="badge b${c}">${c}</span>`;
+const PB = p => `<span class="badge b${p}">${p}</span>`;
+const SB = s => `<span class="badge b${s.replace(' ', '')}">${s}</span>`;
+
+function ago(iso) {
+  const s = Math.floor((Date.now() - new Date(iso)) / 1000);
+  if (s < 60)    return 'just now';
+  if (s < 3600)  return Math.floor(s / 60) + 'm ago';
+  if (s < 86400) return Math.floor(s / 3600) + 'h ago';
+  return new Date(iso).toLocaleDateString();
+}
+
+function toast(msg, type = 'inf') {
+  const icons = { ok: '✅', err: '❌', inf: 'ℹ️' };
+  const c  = document.getElementById('toast-wrap');
+  const el = document.createElement('div');
+  el.className = `toast t${type}`;
+  el.innerHTML = `<span>${icons[type]}</span><span>${msg}</span>`;
+  c.appendChild(el);
+  setTimeout(() => el.remove(), 4200);
+}
+
+// ═════════════════════════════════════════════════
+// AUTO-RESTORE SESSION
+// ═════════════════════════════════════════════════
+if (TOK && USER) {
+  api('/api/auth/me').then(d => {
+    if (d.user) { USER = d.user; bootApp(); }
+    else forceLogout();
+  });
+}
+</script>
+</body>
+</html>
