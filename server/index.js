@@ -397,11 +397,8 @@ app.get("/api/insight", auth, staffOnly, async (req, res) => {
   const snap = rows.map(r => `[${r.id}] ${r.category}/${r.priority} — "${r.title}" (${r.status})`).join("\n");
   try {
     const c = await groq.chat.completions.create({
-<<<<<<< HEAD
+
       model: "openai/gpt-oss-120b",
-=======
-      model: "llama-3.3-70b-versatile",
->>>>>>> 39a598332d22cdb29b96bee4ce9036f0221406e3
       messages: [{ role: "system", content: INSIGHT_PROMPT }, { role: "user", content: snap }],
       temperature: 0.4,
       max_tokens: 180,
